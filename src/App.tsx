@@ -488,3 +488,95 @@ const WorkConnectApp: React.FC = () => {
 
         {/* VIEW C: ALL CATEGORIES */}
         {currentTab === 'categories' && (
+      <CategoriesView onSelectCategory={handleCategorySelect} />
+        )}
+
+        {/* VIEW D: SAVED JOBS */}
+        {currentTab === 'saved' && (
+          <SavedJobsView
+            onViewJob={(j) => setSelectedJobForDetail(j)}
+            onApplyExternal={(j) => setSelectedJobForApply(j)}
+            onExplore={() => {
+              setCurrentTab('explore');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        )}
+
+        {/* VIEW E: CANDIDATE DASHBOARD / PROFILE */}
+        {currentTab === 'dashboard' && (
+          <UserDashboard
+            onViewJob={(j) => setSelectedJobForDetail(j)}
+            onApplyExternal={(j) => setSelectedJobForApply(j)}
+            onNavigateTab={(tab) => {
+              setCurrentTab(tab);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onFilterCategory={handleCategorySelect}
+          />
+        )}
+
+        {/* VIEW F: ADMINISTRATOR CONTROL PANEL */}
+        {currentTab === 'admin' && (
+          <AdminDashboard
+            onOpenSetupGuide={() => setIsSetupGuideOpen(true)}
+            onViewJob={(j) => setSelectedJobForDetail(j)}
+          />
+        )}
+      </main>
+
+      {/* 4. Global Footer */}
+      <Footer
+        onNavigateTab={(tab) => {
+          setCurrentTab(tab);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenSetupGuide={() => setIsSetupGuideOpen(true)}
+      />
+
+      {/* 5. Modals & Overlays */}
+      {/* A. Job Detail Modal */}
+      <JobDetailModal
+        job={selectedJobForDetail}
+        isOpen={Boolean(selectedJobForDetail)}
+        onClose={() => setSelectedJobForDetail(null)}
+        onApplyExternal={(job) => {
+          setSelectedJobForDetail(null);
+          setSelectedJobForApply(job);
+        }}
+      />
+
+      {/* B. External Redirect Notice Modal */}
+      <ExternalRedirectModal
+        job={selectedJobForApply}
+        isOpen={Boolean(selectedJobForApply)}
+        onClose={() => setSelectedJobForApply(null)}
+      />
+
+      {/* C. Authentication Modal (Sign In / Sign Up) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialTab={authInitialTab}
+      />
+
+      {/* D. Supabase Setup Guide Modal */}
+      <SupabaseSetupModal
+        isOpen={isSetupGuideOpen}
+        onClose={() => setIsSetupGuideOpen(false)}
+      />
+    </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <JobProvider>
+        <WorkConnectApp />
+      </JobProvider>
+    </AuthProvider>
+  );
+};
+
+export default App;
