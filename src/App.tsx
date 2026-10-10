@@ -5,6 +5,7 @@ import { Navbar } from './components/Navbar';
 import { DemoBanner } from './components/DemoBanner';
 import { HeroSection } from './components/HeroSection';
 import { CategoryCards, industries } from './components/CategoryCards';
+import { IndustryRolesView } from './components/IndustryRolesView';
 import { JobCard } from './components/JobCard';
 import { JobFilters } from './components/JobFilters';
 import { HowItWorks } from './components/HowItWorks';
@@ -301,50 +302,17 @@ const WorkConnectApp: React.FC = () => {
           </div>
         )}
 
-        {/* VIEW B1: INDUSTRY → JOB ROLES */}
+        {/* VIEW B1: INDUSTRY → JOB ROLES → JOB INFORMATION */}
         {currentTab === 'explore' && selectedIndustryData && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-            <button
-              onClick={() => {
-                setSelectedIndustry(null);
-                setCurrentTab('home');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-400 hover:text-indigo-300"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to all industries
-            </button>
-
-            <div className="flex items-center gap-4 pb-4 border-b border-slate-800">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
-                <selectedIndustryData.icon className="w-7 h-7" />
-              </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                  {selectedIndustryData.name}
-                </h1>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                  {selectedIndustryData.roles.length} job roles · Select a role to explore
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {selectedIndustryData.roles.map((role) => (
-                <div
-                  key={role}
-                  className="bg-slate-900/60 border border-slate-800 hover:border-indigo-500/50 rounded-2xl p-5 text-sm font-semibold text-white transition"
-                >
-                  {role}
-                </div>
-              ))}
-            </div>
-
-            <p className="text-[11px] text-slate-500">
-              Prototype: role discovery demo. Real vacancies can be integrated later through authorized APIs and feeds.
-            </p>
-          </div>
+          <IndustryRolesView
+            key={selectedIndustryData.id}
+            industry={selectedIndustryData}
+            onBack={() => {
+              setSelectedIndustry(null);
+              setCurrentTab('home');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
         )}
 
         {/* VIEW B: EXPLORE JOBS (SEARCH & DISCOVERY) */}
@@ -520,95 +488,3 @@ const WorkConnectApp: React.FC = () => {
 
         {/* VIEW C: ALL CATEGORIES */}
         {currentTab === 'categories' && (
-          <CategoriesView onSelectCategory={handleCategorySelect} />
-        )}
-
-        {/* VIEW D: SAVED JOBS */}
-        {currentTab === 'saved' && (
-          <SavedJobsView
-            onViewJob={(j) => setSelectedJobForDetail(j)}
-            onApplyExternal={(j) => setSelectedJobForApply(j)}
-            onExplore={() => {
-              setCurrentTab('explore');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-          />
-        )}
-
-        {/* VIEW E: CANDIDATE DASHBOARD / PROFILE */}
-        {currentTab === 'dashboard' && (
-          <UserDashboard
-            onViewJob={(j) => setSelectedJobForDetail(j)}
-            onApplyExternal={(j) => setSelectedJobForApply(j)}
-            onNavigateTab={(tab) => {
-              setCurrentTab(tab);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            onFilterCategory={handleCategorySelect}
-          />
-        )}
-
-        {/* VIEW F: ADMINISTRATOR CONTROL PANEL */}
-        {currentTab === 'admin' && (
-          <AdminDashboard
-            onOpenSetupGuide={() => setIsSetupGuideOpen(true)}
-            onViewJob={(j) => setSelectedJobForDetail(j)}
-          />
-        )}
-      </main>
-
-      {/* 4. Global Footer */}
-      <Footer
-        onNavigateTab={(tab) => {
-          setCurrentTab(tab);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onOpenSetupGuide={() => setIsSetupGuideOpen(true)}
-      />
-
-      {/* 5. Modals & Overlays */}
-      {/* A. Job Detail Modal */}
-      <JobDetailModal
-        job={selectedJobForDetail}
-        isOpen={Boolean(selectedJobForDetail)}
-        onClose={() => setSelectedJobForDetail(null)}
-        onApplyExternal={(job) => {
-          setSelectedJobForDetail(null);
-          setSelectedJobForApply(job);
-        }}
-      />
-
-      {/* B. External Redirect Notice Modal */}
-      <ExternalRedirectModal
-        job={selectedJobForApply}
-        isOpen={Boolean(selectedJobForApply)}
-        onClose={() => setSelectedJobForApply(null)}
-      />
-
-      {/* C. Authentication Modal (Sign In / Sign Up) */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        initialTab={authInitialTab}
-      />
-
-      {/* D. Supabase Setup Guide Modal */}
-      <SupabaseSetupModal
-        isOpen={isSetupGuideOpen}
-        onClose={() => setIsSetupGuideOpen(false)}
-      />
-    </div>
-  );
-};
-
-export const App: React.FC = () => {
-  return (
-    <AuthProvider>
-      <JobProvider>
-        <WorkConnectApp />
-      </JobProvider>
-    </AuthProvider>
-  );
-};
-
-export default App;
