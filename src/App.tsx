@@ -24,27 +24,30 @@ import { Footer } from './components/Footer';
 import { Job, FilterState } from './types';
 import {
   Search,
-  SlidersHorizontal,
   LayoutGrid,
   List,
   ArrowUpDown,
   Sparkles,
   RotateCcw,
-  Briefcase,
-  Layers,
-  MapPin,
-  CheckCircle,
-  ArrowLeft,
 } from 'lucide-react';
 
+type Tab =
+  | 'home'
+  | 'explore'
+  | 'categories'
+  | 'saved'
+  | 'dashboard'
+  | 'admin'
+  | 'applied'
+  | 'accepted'
+  | 'reviewed';
+
 const WorkConnectApp: React.FC = () => {
-  const { profile, isAdmin } = useAuth();
-  const { jobs, categories, sources, isLoading } = useJobs();
+  const { profile } = useAuth();
+  const { jobs, categories, sources } = useJobs();
 
   // Active Main Navigation Tab
-  const [currentTab, setCurrentTab] = useState<
-    'home' | 'explore' | 'categories' | 'saved' | 'dashboard' | 'admin' | 'applied' | 'accepted' | 'reviewed'
-  >('home');
+  const [currentTab, setCurrentTab] = useState<Tab>('home');
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const selectedIndustryData =
     industries.find((i) => i.id === selectedIndustry) || null;
@@ -54,7 +57,7 @@ const WorkConnectApp: React.FC = () => {
 
   useEffect(() => {
     const onPop = (e: PopStateEvent) => {
-      const s = e.state as { tab?: any; industry?: string | null } | null;
+      const s = e.state as { tab?: Tab; industry?: string | null } | null;
       if (s && s.tab) {
         setCurrentTab(s.tab);
         setSelectedIndustry(s.industry ?? null);
@@ -80,11 +83,34 @@ const WorkConnectApp: React.FC = () => {
     window.history.pushState(state, '');
   }, [currentTab, selectedIndustry]);
 
+  // Keep each role on its own pages (runs when login / logout happens)
+  const userRole = profile?.role ?? null;
+  useEffect(() => {
+    if (userRole === 'employer' && currentTab !== 'home' && currentTab !== 'reviewed') {
+      setSelectedIndustry(null);
+      setCurrentTab('home');
+    } else if (userRole !== 'employer' && currentTab === 'reviewed') {
+      setCurrentTab('home');
+    } else if (
+      !userRole &&
+      (currentTab === 'applied' ||
+        currentTab === 'accepted' ||
+        currentTab === 'dashboard' ||
+        currentTab === 'admin')
+    ) {
+      setCurrentTab('home');
+    } else if (userRole === 'job_seeker' && currentTab === 'admin') {
+      setCurrentTab('home');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userRole]);
+
   // Modals State
   const [selectedJobForDetail, setSelectedJobForDetail] = useState<Job | null>(null);
   const [selectedJobForApply, setSelectedJobForApply] = useState<Job | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authInitialTab, setAuthInitialTab] = useState<'signin' | 'signup'>('signin');
+  const [authInitialRole, setAuthInitialRole] = useState<'job_seeker' | 'employer'>('job_seeker');
   const [isSetupGuideOpen, setIsSetupGuideOpen] = useState(false);
 
   // Filters State for Job Discovery
@@ -148,17 +174,20 @@ const WorkConnectApp: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Category select trigger -> Transition to explore
+  // Category select trigger -> Industry -> Job Roles
   const handleCategorySelect = (categoryId: string) => {
     setSelectedIndustry(categoryId);
     setCurrentTab('explore');
-
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Open Auth Modal helper
-  const handleOpenAuth = (initialTab: 'signin' | 'signup' = 'signin') => {
+  const handleOpenAuth = (
+    initialTab: 'signin' | 'signup' = 'signin',
+    role: 'job_seeker' | 'employer' = 'job_seeker'
+  ) => {
     setAuthInitialTab(initialTab);
+    setAuthInitialRole(role);
     setIsAuthModalOpen(true);
   };
 
@@ -166,10 +195,8 @@ const WorkConnectApp: React.FC = () => {
   const filteredJobs = useMemo(() => {
     return jobs
       .filter((job) => {
-        // Only active jobs in user view
         if (job.status !== 'active') return false;
 
-        // 1. Search Query (Title, Employer, Description, Location)
         if (filters.searchQuery.trim()) {
           const q = filters.searchQuery.toLowerCase();
           const matchTitle = job.title.toLowerCase().includes(q);
@@ -181,56 +208,48 @@ const WorkConnectApp: React.FC = () => {
           }
         }
 
-        // 2. City
         if (filters.city !== 'all' && filters.city !== 'all locations') {
           if (job.city.toLowerCase() !== filters.city.toLowerCase()) {
             return false;
           }
         }
 
-        // 3. Category
         if (filters.categoryId !== 'all') {
           if (job.categoryId !== filters.categoryId) {
             return false;
           }
         }
 
-        // 4. Job Type
         if (filters.jobType !== 'all') {
           if (job.jobType !== filters.jobType) {
             return false;
           }
         }
 
-        // 5. Experience Level
         if (filters.experienceLevel !== 'all') {
           if (job.experienceLevel !== filters.experienceLevel) {
             return false;
           }
         }
 
-        // 6. Work Arrangement
         if (filters.workArrangement !== 'all') {
           if (job.workArrangement !== filters.workArrangement) {
             return false;
           }
         }
 
-        // 7. Source
         if (filters.sourceId !== 'all') {
           if (job.sourceId !== filters.sourceId) {
             return false;
           }
         }
 
-        // 8. Minimum Salary
         if (filters.minSalary > 0) {
           if (!job.salaryMin || job.salaryMin < filters.minSalary) {
             return false;
           }
         }
 
-        // 9. Disclosed Salary Only
         if (filters.salaryDisclosedOnly && !job.salaryDisclosed) {
           return false;
         }
@@ -272,7 +291,7 @@ const WorkConnectApp: React.FC = () => {
 
       {/* 3. Main View Switcher */}
       <main className="flex-1">
-        {/* VIEW A2: EMPLOYER HOME */}
+        {/* VIEW A2: EMPLOYER HOME (only after employer login) */}
         {currentTab === 'home' && profile?.role === 'employer' && <EmployerHome />}
 
         {/* VIEW A: HOME / LANDING PAGE */}
@@ -289,7 +308,7 @@ const WorkConnectApp: React.FC = () => {
               onSelectCategory={handleCategorySelect}
             />
 
-            {/* Featured Vacancies Section */}
+            {/* Featured Section */}
             <section className="py-16 bg-slate-950 border-t border-slate-900">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
@@ -330,7 +349,7 @@ const WorkConnectApp: React.FC = () => {
               </div>
             </section>
 
-            {/* How WorkConnect Works (3 Simple Steps) */}
+            {/* How WorkConnect Works */}
             <HowItWorks />
 
             {/* Trust, Transparency & Safety Notice */}
@@ -343,6 +362,7 @@ const WorkConnectApp: React.FC = () => {
           <IndustryRolesView
             key={selectedIndustryData.id}
             industry={selectedIndustryData}
+            onOpenAuth={handleOpenAuth}
             onBack={() => {
               setSelectedIndustry(null);
               setCurrentTab('home');
@@ -354,7 +374,6 @@ const WorkConnectApp: React.FC = () => {
         {/* VIEW B: EXPLORE JOBS (SEARCH & DISCOVERY) */}
         {currentTab === 'explore' && !selectedIndustryData && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-            {/* Header / Search Summary */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
@@ -367,9 +386,7 @@ const WorkConnectApp: React.FC = () => {
                 </p>
               </div>
 
-              {/* View & Sort Controls */}
               <div className="flex flex-wrap items-center gap-3">
-                {/* Sort dropdown */}
                 <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300">
                   <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
                   <span className="text-slate-500">Sort:</span>
@@ -386,7 +403,6 @@ const WorkConnectApp: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Grid / List View Toggle */}
                 <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1">
                   <button
                     onClick={() => setViewMode('grid')}
@@ -414,9 +430,7 @@ const WorkConnectApp: React.FC = () => {
               </div>
             </div>
 
-            {/* Layout: Filters Sidebar + Job Listings Stream */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-              {/* Left Column: Filter Sidebar */}
               <div className="lg:col-span-1">
                 <div className="sticky top-20">
                   <JobFilters
@@ -430,9 +444,7 @@ const WorkConnectApp: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right Column: Job Cards Grid / List */}
               <div className="lg:col-span-3 space-y-6">
-                {/* Active filter badges */}
                 {activeFilterCount > 0 && (
                   <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-900/60 border border-slate-800 rounded-xl text-xs">
                     <span className="text-slate-400 font-medium">Applied Filters:</span>
@@ -478,7 +490,6 @@ const WorkConnectApp: React.FC = () => {
                   </div>
                 )}
 
-                {/* Empty State */}
                 {filteredJobs.length === 0 ? (
                   <div className="py-20 px-4 text-center rounded-3xl bg-slate-900/40 border border-slate-800 space-y-4">
                     <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-slate-500 shadow-inner">
@@ -487,7 +498,7 @@ const WorkConnectApp: React.FC = () => {
                     <div className="space-y-1">
                       <h3 className="text-lg font-bold text-white">No job openings found</h3>
                       <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
-                        No vacancies match your active filter criteria. Try expanding your search terms, resetting filters, or selecting a different location.
+                        No listings match your active filter criteria. Try expanding your search terms, resetting filters, or selecting a different location.
                       </p>
                     </div>
                     <button
@@ -499,13 +510,12 @@ const WorkConnectApp: React.FC = () => {
                     </button>
                   </div>
                 ) : (
-                  /* Job Cards Stream */
                   <div
                     className={
                       viewMode === 'grid'
                         ? 'grid grid-cols-1 md:grid-cols-2 gap-5'
                         : 'flex flex-col gap-4'
-                      }
+                    }
                   >
                     {filteredJobs.map((job) => (
                       <JobCard
@@ -539,7 +549,7 @@ const WorkConnectApp: React.FC = () => {
           />
         )}
 
-        {/* VIEW E: CANDIDATE DASHBOARD / PROFILE */}
+        {/* VIEW E: JOB SEEKER PROFILE */}
         {currentTab === 'dashboard' && (
           <UserDashboard
             onViewJob={(j) => setSelectedJobForDetail(j)}
@@ -566,8 +576,8 @@ const WorkConnectApp: React.FC = () => {
           />
         )}
 
-        {/* VIEW F: ADMINISTRATOR CONTROL PANEL */}
-        {currentTab === 'admin' && (
+        {/* VIEW F: ADMIN PANEL (admin login only) */}
+        {currentTab === 'admin' && profile?.role === 'admin' && (
           <AdminDashboard
             onOpenSetupGuide={() => setIsSetupGuideOpen(true)}
             onViewJob={(j) => setSelectedJobForDetail(j)}
@@ -585,7 +595,6 @@ const WorkConnectApp: React.FC = () => {
       />
 
       {/* 5. Modals & Overlays */}
-      {/* A. Job Detail Modal */}
       <JobDetailModal
         job={selectedJobForDetail}
         isOpen={Boolean(selectedJobForDetail)}
@@ -596,21 +605,19 @@ const WorkConnectApp: React.FC = () => {
         }}
       />
 
-      {/* B. External Redirect Notice Modal */}
       <ExternalRedirectModal
         job={selectedJobForApply}
         isOpen={Boolean(selectedJobForApply)}
         onClose={() => setSelectedJobForApply(null)}
       />
 
-      {/* C. Authentication Modal (Sign In / Sign Up) */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         initialTab={authInitialTab}
+        initialRole={authInitialRole}
       />
 
-      {/* D. Supabase Setup Guide Modal */}
       <SupabaseSetupModal
         isOpen={isSetupGuideOpen}
         onClose={() => setIsSetupGuideOpen(false)}
