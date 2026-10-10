@@ -10,6 +10,7 @@ interface SignUpData {
   fullName: string;
   preferredLocation: string;
   preferredCategories: string[];
+  role?: 'job_seeker' | 'employer';
 }
 
 interface AuthContextType {
@@ -26,47 +27,93 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error?: string }>;
 }
 
-const DEMO_JOB_SEEKER: UserProfile = {
-  id: 'usr-demo-seeker-1',
-  email: 'vinodini@example.com',
-  fullName: 'Vinodini R.',
-  preferredLocation: 'Hyderabad',
-  preferredCategories: ['cat-restaurants', 'cat-software', 'cat-retail'],
-  role: 'job_seeker',
-  createdAt: '2026-10-01T08:00:00Z',
+// ---------- Demo mode accounts (stored on this device only) ----------
+interface DemoAccount {
+  id: string;
+  email: string;
+  password: string;
+  fullName: string;
+  role: Role;
+  preferredLocation: string;
+  preferredCategories: string[];
+  createdAt: string;
+}
+
+const ACCOUNTS_KEY = 'workconnect_demo_accounts';
+const PROFILE_KEY = 'workconnect_demo_profile';
+
+const SEED_ACCOUNTS: DemoAccount[] = [
+  {
+    id: 'usr-demo-seeker-1',
+    email: 'vinodini@example.com',
+    password: 'password123',
+    fullName: 'Vinodini R.',
+    role: 'job_seeker',
+    preferredLocation: 'Hyderabad',
+    preferredCategories: [],
+    createdAt: '2026-10-01T08:00:00Z',
+  },
+  {
+    id: 'usr-demo-employer-1',
+    email: 'shop@workconnect.local',
+    password: 'shop123',
+    fullName: 'Demo Shop Owner',
+    role: 'employer',
+    preferredLocation: 'Hyderabad',
+    preferredCategories: [],
+    createdAt: '2026-10-02T08:00:00Z',
+  },
+  {
+    id: 'usr-demo-admin-1',
+    email: 'admin@workconnect.local',
+    password: 'admin123',
+    fullName: 'WorkConnect Administrator',
+    role: 'admin',
+    preferredLocation: 'Hyderabad',
+    preferredCategories: [],
+    createdAt: '2026-09-15T08:00:00Z',
+  },
+];
+
+const readAccounts = (): DemoAccount[] => {
+  try {
+    const raw = localStorage.getItem(ACCOUNTS_KEY);
+    if (raw) return JSON.parse(raw) as DemoAccount[];
+  } catch {
+    // ignore
+  }
+  return SEED_ACCOUNTS;
 };
 
-const DEMO_EMPLOYER: UserProfile = {
-  id: 'usr-demo-employer-1',
-  email: 'shop@workconnect.local',
-  fullName: 'Demo Shop Owner',
-  preferredLocation: 'Hyderabad',
-  preferredCategories: [],
-  role: 'employer',
-  createdAt: '2026-10-02T08:00:00Z',
+const writeAccounts = (list: DemoAccount[]) => {
+  try {
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list));
+  } catch {
+    // ignore
+  }
 };
 
-const DEMO_ADMIN: UserProfile = {
-  id: 'usr-demo-admin-1',
-  email: 'admin@workconnect.local',
-  fullName: 'WorkConnect Administrator',
-  preferredLocation: 'Hyderabad',
-  preferredCategories: [],
-  role: 'admin',
-  createdAt: '2026-09-15T08:00:00Z',
-};
+const toProfile = (a: DemoAccount): UserProfile => ({
+  id: a.id,
+  email: a.email,
+  fullName: a.fullName,
+  preferredLocation: a.preferredLocation,
+  preferredCategories: a.preferredCategories,
+  role: a.role,
+  createdAt: a.createdAt,
+});
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profile, setProfile] = useState<UserProfile | null>(() => {
-    // If running in demo mode, restore stored demo session or default to demo job seeker
+    // Demo mode: restore stored session, otherwise start as Guest
     if (!isSupabaseConfigured) {
       try {
-        const stored = localStorage.getItem('workconnect_demo_profile');
-        return stored ? JSON.parse(stored) : DEMO_JOB_SEEKER;
+        const stored = localStorage.getItem(PROFILE_KEY);
+        return stored ? JSON.parse(stored) : null;
       } catch {
-        return DEMO_JOB_SEEKER;
+        return null;
       }
     }
     return null;
@@ -79,6 +126,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (profile) return 'job_seeker';
     return 'guest';
   });
+
+  const saveSession = (p: UserProfile | null) => {
+    setProfile(p);
+    setDemoRole(
+      !p ? 'guest' : p.role === 'admin' ? 'admin' : p.role === 'employer' ? 'employer' : 'job_seeker'
+    );
+    try {
+      if (p) localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+      else localStorage.removeItem(PROFILE_KEY);
+    } catch {
+      // ignore
+    }
+  };
 
   // Sync Supabase Auth if credentials are configured
   useEffect(() => {
@@ -99,7 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProfile({
             id: data.id,
             email: data.email || email,
-            fullName: data.full_name || 'Job Seeker',
+            fullName: data.full_name || 'User',
             preferredLocation: data.preferred_location || 'Hyderabad',
             preferredCategories: data.preferred_categories || [],
             role: (data.role as Role) || 'job_seeker',
@@ -107,7 +167,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             updatedAt: data.updated_at,
           });
         } else {
-          // Fallback if profile row is not yet created
           setProfile({
             id: userId,
             email: email,
@@ -125,7 +184,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         fetchProfile(session.user.id, session.user.email || '');
@@ -151,60 +209,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Quick Demo Role Switcher
+  // Kept for compatibility (not shown in the public UI)
   const switchDemoRole = (role: DemoRole) => {
-    setDemoRole(role);
     if (role === 'guest') {
-      setProfile(null);
-      localStorage.removeItem('workconnect_demo_profile');
-    } else if (role === 'job_seeker') {
-      setProfile(DEMO_JOB_SEEKER);
-      localStorage.setItem('workconnect_demo_profile', JSON.stringify(DEMO_JOB_SEEKER));
-    } else if (role === 'employer') {
-      setProfile(DEMO_EMPLOYER);
-      localStorage.setItem('workconnect_demo_profile', JSON.stringify(DEMO_EMPLOYER));
-    } else if (role === 'admin') {
-      setProfile(DEMO_ADMIN);
-      localStorage.setItem('workconnect_demo_profile', JSON.stringify(DEMO_ADMIN));
+      saveSession(null);
+      return;
     }
+    const acc = readAccounts().find((a) => a.role === role);
+    if (acc) saveSession(toProfile(acc));
   };
 
   // Sign In
   const signIn = async (email: string, password = ''): Promise<{ error?: string }> => {
     if (!isSupabaseConfigured) {
-      // Demo Mode authentication logic
-      const lower = email.toLowerCase();
-      if (lower.includes('admin')) {
-        setProfile(DEMO_ADMIN);
-        setDemoRole('admin');
-        localStorage.setItem('workconnect_demo_profile', JSON.stringify(DEMO_ADMIN));
-      } else if (lower.includes('employer') || lower.includes('shop')) {
-        const employer: UserProfile = {
-          ...DEMO_EMPLOYER,
-          email,
-          fullName: email.split('@')[0] || 'Shop Owner',
-        };
-        setProfile(employer);
-        setDemoRole('employer');
-        localStorage.setItem('workconnect_demo_profile', JSON.stringify(employer));
-      } else {
-        const seeker: UserProfile = {
-          ...DEMO_JOB_SEEKER,
-          email,
-          fullName: email.split('@')[0] || 'Job Seeker',
-        };
-        setProfile(seeker);
-        setDemoRole('job_seeker');
-        localStorage.setItem('workconnect_demo_profile', JSON.stringify(seeker));
-      }
+      const acc = readAccounts().find((a) => a.email.toLowerCase() === email.trim().toLowerCase());
+      if (!acc) return { error: 'No account found with this email. Please sign up first.' };
+      if (acc.password !== password) return { error: 'Incorrect password.' };
+      saveSession(toProfile(acc));
       return {};
     }
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { error: error.message };
       return {};
     } catch (err: any) {
@@ -212,22 +238,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Sign Up
+  // Sign Up (Job Seeker or Employer only. Admin can never be created here)
   const signUp = async (data: SignUpData): Promise<{ error?: string }> => {
+    const role: Role = data.role === 'employer' ? 'employer' : 'job_seeker';
+
     if (!isSupabaseConfigured) {
-      // Demo Mode registration logic
-      const newSeeker: UserProfile = {
+      const list = readAccounts();
+      if (list.some((a) => a.email.toLowerCase() === data.email.trim().toLowerCase())) {
+        return { error: 'An account with this email already exists. Please sign in.' };
+      }
+      const acc: DemoAccount = {
         id: `usr-${Date.now()}`,
-        email: data.email,
+        email: data.email.trim(),
+        password: data.password,
         fullName: data.fullName,
+        role,
         preferredLocation: data.preferredLocation || 'Hyderabad',
         preferredCategories: data.preferredCategories || [],
-        role: 'job_seeker',
         createdAt: new Date().toISOString(),
       };
-      setProfile(newSeeker);
-      setDemoRole('job_seeker');
-      localStorage.setItem('workconnect_demo_profile', JSON.stringify(newSeeker));
+      writeAccounts([...list, acc]);
+      saveSession(toProfile(acc));
       return {};
     }
 
@@ -247,14 +278,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) return { error: error.message };
 
       if (authData.user) {
-        // Attempt immediate profile insertion or let Supabase trigger handle it
         await supabase.from('profiles').upsert({
           id: authData.user.id,
           email: data.email,
           full_name: data.fullName,
           preferred_location: data.preferredLocation,
           preferred_categories: data.preferredCategories,
-          role: 'job_seeker',
+          role,
         });
       }
 
@@ -267,12 +297,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Sign Out
   const signOut = async () => {
     if (!isSupabaseConfigured) {
-      setProfile(null);
-      setDemoRole('guest');
-      localStorage.removeItem('workconnect_demo_profile');
+      saveSession(null);
       return;
     }
-
     await supabase.auth.signOut();
     setProfile(null);
   };
@@ -285,7 +312,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(updated);
 
     if (!isSupabaseConfigured) {
-      localStorage.setItem('workconnect_demo_profile', JSON.stringify(updated));
+      try {
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(updated));
+        writeAccounts(
+          readAccounts().map((a) =>
+            a.id === updated.id
+              ? {
+                  ...a,
+                  fullName: updated.fullName,
+                  preferredLocation: updated.preferredLocation,
+                  preferredCategories: updated.preferredCategories,
+                }
+              : a
+          )
+        );
+      } catch {
+        // ignore
+      }
       return {};
     }
 
