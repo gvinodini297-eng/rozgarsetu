@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { JobProvider, useJobs } from './context/JobContext';
 import { Navbar } from './components/Navbar';
@@ -47,7 +47,37 @@ const WorkConnectApp: React.FC = () => {
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const selectedIndustryData =
     industries.find((i) => i.id === selectedIndustry) || null;
+ // Browser Back button support: keep tab / industry in history
+  const historyReady = useRef(false);
 
+  useEffect(() => {
+    const onPopState = (e: PopStateEvent) => {
+      const s = e.state;
+      if (s && s.tab) {
+        setCurrentTab(s.tab);
+        setSelectedIndustry(s.industry ?? null);
+      } else {
+        setCurrentTab('home');
+        setSelectedIndustry(null);
+      }
+      window.scrollTo({ top: 0 });
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  useEffect(() => {
+    const state = { tab: currentTab, industry: selectedIndustry };
+    if (!historyReady.current) {
+      window.history.replaceState(state, '');
+      historyReady.current = true;
+      return;
+    }
+    const cur = window.history.state;
+    if (!cur || cur.tab !== currentTab || (cur.industry ?? null) !== selectedIndustry) {
+      window.history.pushState(state, '');
+    }
+  }, [currentTab, selectedIndustry]);
   // Modals State
   const [selectedJobForDetail, setSelectedJobForDetail] = useState<Job | null>(null);
   const [selectedJobForApply, setSelectedJobForApply] = useState<Job | null>(null);
