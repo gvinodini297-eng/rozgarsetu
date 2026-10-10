@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, Role } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
+type DemoRole = 'guest' | 'job_seeker' | 'employer' | 'admin';
+
 interface SignUpData {
   email: string;
   password: string;
@@ -15,12 +17,12 @@ interface AuthContextType {
   isAdmin: boolean;
   isLoading: boolean;
   isDemoMode: boolean;
-  demoRole: 'guest' | 'job_seeker' | 'admin';
+  demoRole: DemoRole;
   signIn: (email: string, password?: string) => Promise<{ error?: string }>;
   signUp: (data: SignUpData) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error?: string }>;
-  switchDemoRole: (role: 'guest' | 'job_seeker' | 'admin') => void;
+  switchDemoRole: (role: DemoRole) => void;
   resetPassword: (email: string) => Promise<{ error?: string }>;
 }
 
@@ -32,6 +34,16 @@ const DEMO_JOB_SEEKER: UserProfile = {
   preferredCategories: ['cat-restaurants', 'cat-software', 'cat-retail'],
   role: 'job_seeker',
   createdAt: '2026-10-01T08:00:00Z',
+};
+
+const DEMO_EMPLOYER: UserProfile = {
+  id: 'usr-demo-employer-1',
+  email: 'shop@workconnect.local',
+  fullName: 'Demo Shop Owner',
+  preferredLocation: 'Hyderabad',
+  preferredCategories: [],
+  role: 'employer',
+  createdAt: '2026-10-02T08:00:00Z',
 };
 
 const DEMO_ADMIN: UserProfile = {
@@ -61,8 +73,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(isSupabaseConfigured);
-  const [demoRole, setDemoRole] = useState<'guest' | 'job_seeker' | 'admin'>(() => {
+  const [demoRole, setDemoRole] = useState<DemoRole>(() => {
     if (profile?.role === 'admin') return 'admin';
+    if (profile?.role === 'employer') return 'employer';
     if (profile) return 'job_seeker';
     return 'guest';
   });
@@ -139,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Quick Demo Role Switcher
-  const switchDemoRole = (role: 'guest' | 'job_seeker' | 'admin') => {
+  const switchDemoRole = (role: DemoRole) => {
     setDemoRole(role);
     if (role === 'guest') {
       setProfile(null);
@@ -147,6 +160,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else if (role === 'job_seeker') {
       setProfile(DEMO_JOB_SEEKER);
       localStorage.setItem('workconnect_demo_profile', JSON.stringify(DEMO_JOB_SEEKER));
+    } else if (role === 'employer') {
+      setProfile(DEMO_EMPLOYER);
+      localStorage.setItem('workconnect_demo_profile', JSON.stringify(DEMO_EMPLOYER));
     } else if (role === 'admin') {
       setProfile(DEMO_ADMIN);
       localStorage.setItem('workconnect_demo_profile', JSON.stringify(DEMO_ADMIN));
@@ -157,10 +173,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password = ''): Promise<{ error?: string }> => {
     if (!isSupabaseConfigured) {
       // Demo Mode authentication logic
-      if (email.toLowerCase().includes('admin')) {
+      const lower = email.toLowerCase();
+      if (lower.includes('admin')) {
         setProfile(DEMO_ADMIN);
         setDemoRole('admin');
         localStorage.setItem('workconnect_demo_profile', JSON.stringify(DEMO_ADMIN));
+      } else if (lower.includes('employer') || lower.includes('shop')) {
+        const employer: UserProfile = {
+          ...DEMO_EMPLOYER,
+          email,
+          fullName: email.split('@')[0] || 'Shop Owner',
+        };
+        setProfile(employer);
+        setDemoRole('employer');
+        localStorage.setItem('workconnect_demo_profile', JSON.stringify(employer));
       } else {
         const seeker: UserProfile = {
           ...DEMO_JOB_SEEKER,
