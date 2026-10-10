@@ -11,6 +11,21 @@ export const DemoBanner: React.FC<DemoBannerProps> = ({ onOpenSetupGuide }) => {
 
   if (!isDemoMode) return null;
 
+  const roleBtn = (
+    role: 'guest' | 'job_seeker' | 'employer' | 'admin',
+    label: string,
+    activeCls: string
+  ) => (
+    <button
+      onClick={() => switchDemoRole(role)}
+      className={`px-1.5 py-0.5 rounded text-[11px] font-medium transition ${
+        demoRole === role ? activeCls : 'text-slate-400 hover:text-white'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 border-b border-indigo-500/20 px-4 py-2 text-xs">
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
@@ -29,30 +44,10 @@ export const DemoBanner: React.FC<DemoBannerProps> = ({ onOpenSetupGuide }) => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700/60 rounded-md px-2 py-0.5">
             <span className="text-slate-400 font-medium">Role:</span>
-            <button
-              onClick={() => switchDemoRole('guest')}
-              className={`px-1.5 py-0.5 rounded text-[11px] font-medium transition ${
-                demoRole === 'guest' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Guest
-            </button>
-            <button
-              onClick={() => switchDemoRole('job_seeker')}
-              className={`px-1.5 py-0.5 rounded text-[11px] font-medium transition ${
-                demoRole === 'job_seeker' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Job Seeker
-            </button>
-            <button
-              onClick={() => switchDemoRole('admin')}
-              className={`px-1.5 py-0.5 rounded text-[11px] font-medium transition ${
-                demoRole === 'admin' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Employer
-            </button>
+            {roleBtn('guest', 'Guest', 'bg-slate-700 text-white')}
+            {roleBtn('job_seeker', 'Job Seeker', 'bg-indigo-600 text-white')}
+            {roleBtn('employer', 'Employer', 'bg-emerald-600 text-white')}
+            {roleBtn('admin', 'Admin', 'bg-amber-600 text-white')}
           </div>
 
           <button
