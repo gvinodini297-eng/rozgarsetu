@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Database, ShieldAlert, ArrowRight } from 'lucide-react';
+import { Database, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface DemoBannerProps {
@@ -19,11 +19,11 @@ export const DemoBanner: React.FC<DemoBannerProps> = ({ onOpenSetupGuide }) => {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
           </span>
-          <span className="font-semibold text-indigo-300">Demo Mode Active:</span>
+          <span className="font-semibold text-indigo-300">Prototype Demo:</span>
           <span className="hidden sm:inline text-slate-300">
-            Showcasing realistic local vacancies in Hyderabad & Warangal with full interactive UI and local persistence.
+            Sample job roles and listings for discovery. These are not live vacancies.
           </span>
-          <span className="sm:hidden text-slate-300">Hyderabad & Warangal Demo Data</span>
+          <span className="sm:hidden text-slate-300">Sample data only</span>
         </div>
 
         <div className="flex items-center gap-3">
