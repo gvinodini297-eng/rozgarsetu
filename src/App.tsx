@@ -6,6 +6,7 @@ import { DemoBanner } from './components/DemoBanner';
 import { HeroSection } from './components/HeroSection';
 import { CategoryCards, industries } from './components/CategoryCards';
 import { IndustryRolesView } from './components/IndustryRolesView';
+import { ApplicationsView } from './components/ApplicationsView';
 import { JobCard } from './components/JobCard';
 import { JobFilters } from './components/JobFilters';
 import { HowItWorks } from './components/HowItWorks';
@@ -41,7 +42,7 @@ const WorkConnectApp: React.FC = () => {
 
   // Active Main Navigation Tab
   const [currentTab, setCurrentTab] = useState<
-    'home' | 'explore' | 'categories' | 'saved' | 'dashboard' | 'admin'
+        'home' | 'explore' | 'categories' | 'saved' | 'dashboard' | 'admin' | 'applied' | 'accepted' | 'reviewed'
   >('home');
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const selectedIndustryData =
@@ -513,6 +514,19 @@ const WorkConnectApp: React.FC = () => {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             onFilterCategory={handleCategorySelect}
+          />
+        )}
+                {/* VIEW G: APPLICATION PAGES (DEMO DATA) */}
+        {(currentTab === 'applied' ||
+          currentTab === 'accepted' ||
+          currentTab === 'reviewed') && (
+          <ApplicationsView
+            mode={currentTab}
+            onBrowse={() => {
+              setSelectedIndustry(null);
+              setCurrentTab('home');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
 
