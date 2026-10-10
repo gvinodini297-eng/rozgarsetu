@@ -7,6 +7,7 @@ import { HeroSection } from './components/HeroSection';
 import { CategoryCards, industries } from './components/CategoryCards';
 import { IndustryRolesView } from './components/IndustryRolesView';
 import { ApplicationsView } from './components/ApplicationsView';
+import { EmployerHome } from './components/EmployerHome';
 import { JobCard } from './components/JobCard';
 import { JobFilters } from './components/JobFilters';
 import { HowItWorks } from './components/HowItWorks';
@@ -42,17 +43,18 @@ const WorkConnectApp: React.FC = () => {
 
   // Active Main Navigation Tab
   const [currentTab, setCurrentTab] = useState<
-        'home' | 'explore' | 'categories' | 'saved' | 'dashboard' | 'admin' | 'applied' | 'accepted' | 'reviewed'
+    'home' | 'explore' | 'categories' | 'saved' | 'dashboard' | 'admin' | 'applied' | 'accepted' | 'reviewed'
   >('home');
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const selectedIndustryData =
     industries.find((i) => i.id === selectedIndustry) || null;
- // Browser Back button support: keep tab / industry in history
+
+  // Browser Back button support (history)
   const historyReady = useRef(false);
 
   useEffect(() => {
-    const onPopState = (e: PopStateEvent) => {
-      const s = e.state;
+    const onPop = (e: PopStateEvent) => {
+      const s = e.state as { tab?: any; industry?: string | null } | null;
       if (s && s.tab) {
         setCurrentTab(s.tab);
         setSelectedIndustry(s.industry ?? null);
@@ -62,8 +64,8 @@ const WorkConnectApp: React.FC = () => {
       }
       window.scrollTo({ top: 0 });
     };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
   }, []);
 
   useEffect(() => {
@@ -73,11 +75,11 @@ const WorkConnectApp: React.FC = () => {
       historyReady.current = true;
       return;
     }
-    const cur = window.history.state;
-    if (!cur || cur.tab !== currentTab || (cur.industry ?? null) !== selectedIndustry) {
-      window.history.pushState(state, '');
-    }
+    const cur = window.history.state as { tab?: string; industry?: string | null } | null;
+    if (cur && cur.tab === currentTab && (cur.industry ?? null) === selectedIndustry) return;
+    window.history.pushState(state, '');
   }, [currentTab, selectedIndustry]);
+
   // Modals State
   const [selectedJobForDetail, setSelectedJobForDetail] = useState<Job | null>(null);
   const [selectedJobForApply, setSelectedJobForApply] = useState<Job | null>(null);
@@ -270,8 +272,11 @@ const WorkConnectApp: React.FC = () => {
 
       {/* 3. Main View Switcher */}
       <main className="flex-1">
+        {/* VIEW A2: EMPLOYER HOME */}
+        {currentTab === 'home' && profile?.role === 'employer' && <EmployerHome />}
+
         {/* VIEW A: HOME / LANDING PAGE */}
-        {currentTab === 'home' && (
+        {currentTab === 'home' && profile?.role !== 'employer' && (
           <div className="space-y-4">
             <HeroSection
               categories={categories}
@@ -291,13 +296,13 @@ const WorkConnectApp: React.FC = () => {
                   <div>
                     <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-indigo-400 mb-1">
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>Curated Listings</span>
+                      <span>Sample Listings</span>
                     </div>
                     <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                       Featured Opportunities
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                      Directly verified vacancies from trusted local establishments in Telangana.
+                      Sample demo listings for the prototype. These are not live vacancies.
                     </p>
                   </div>
 
@@ -308,7 +313,7 @@ const WorkConnectApp: React.FC = () => {
                     }}
                     className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 text-xs font-bold transition self-start sm:self-auto"
                   >
-                    View All {jobs.filter((j) => j.status === 'active').length} Vacancies →
+                    View All {jobs.filter((j) => j.status === 'active').length} Demo Listings →
                   </button>
                 </div>
 
@@ -357,8 +362,8 @@ const WorkConnectApp: React.FC = () => {
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-400 mt-1">
                   Showing{' '}
-                  <span className="font-bold text-indigo-400">{filteredJobs.length}</span> verified
-                  openings across local employers and platforms.
+                  <span className="font-bold text-indigo-400">{filteredJobs.length}</span> demo listings
+                  for the prototype (sample data).
                 </p>
               </div>
 
@@ -500,7 +505,7 @@ const WorkConnectApp: React.FC = () => {
                       viewMode === 'grid'
                         ? 'grid grid-cols-1 md:grid-cols-2 gap-5'
                         : 'flex flex-col gap-4'
-                    }
+                      }
                   >
                     {filteredJobs.map((job) => (
                       <JobCard
@@ -519,7 +524,7 @@ const WorkConnectApp: React.FC = () => {
 
         {/* VIEW C: ALL CATEGORIES */}
         {currentTab === 'categories' && (
-      <CategoriesView onSelectCategory={handleCategorySelect} />
+          <CategoriesView onSelectCategory={handleCategorySelect} />
         )}
 
         {/* VIEW D: SAVED JOBS */}
@@ -546,7 +551,8 @@ const WorkConnectApp: React.FC = () => {
             onFilterCategory={handleCategorySelect}
           />
         )}
-                {/* VIEW G: APPLICATION PAGES (DEMO DATA) */}
+
+        {/* VIEW G: APPLICATION PAGES (DEMO DATA) */}
         {(currentTab === 'applied' ||
           currentTab === 'accepted' ||
           currentTab === 'reviewed') && (
