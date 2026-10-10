@@ -4,7 +4,7 @@ import { JobProvider, useJobs } from './context/JobContext';
 import { Navbar } from './components/Navbar';
 import { DemoBanner } from './components/DemoBanner';
 import { HeroSection } from './components/HeroSection';
-import { CategoryCards } from './components/CategoryCards';
+import { CategoryCards, industries } from './components/CategoryCards';
 import { JobCard } from './components/JobCard';
 import { JobFilters } from './components/JobFilters';
 import { HowItWorks } from './components/HowItWorks';
@@ -31,6 +31,7 @@ import {
   Layers,
   MapPin,
   CheckCircle,
+  ArrowLeft,
 } from 'lucide-react';
 
 const WorkConnectApp: React.FC = () => {
@@ -42,6 +43,8 @@ const WorkConnectApp: React.FC = () => {
     'home' | 'explore' | 'categories' | 'saved' | 'dashboard' | 'admin'
   >('home');
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+  const selectedIndustryData =
+    industries.find((i) => i.id === selectedIndustry) || null;
 
   // Modals State
   const [selectedJobForDetail, setSelectedJobForDetail] = useState<Job | null>(null);
@@ -106,17 +109,18 @@ const WorkConnectApp: React.FC = () => {
       city: location ? location.toLowerCase() : 'all',
       categoryId: categoryId || 'all',
     }));
+    setSelectedIndustry(null);
     setCurrentTab('explore');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Category select trigger -> Transition to explore
   const handleCategorySelect = (categoryId: string) => {
-  setSelectedIndustry(categoryId);
-  setCurrentTab('explore');
+    setSelectedIndustry(categoryId);
+    setCurrentTab('explore');
 
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-};
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Open Auth Modal helper
   const handleOpenAuth = (initialTab: 'signin' | 'signup' = 'signin') => {
@@ -297,8 +301,54 @@ const WorkConnectApp: React.FC = () => {
           </div>
         )}
 
+        {/* VIEW B1: INDUSTRY → JOB ROLES */}
+        {currentTab === 'explore' && selectedIndustryData && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+            <button
+              onClick={() => {
+                setSelectedIndustry(null);
+                setCurrentTab('home');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-400 hover:text-indigo-300"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to all industries
+            </button>
+
+            <div className="flex items-center gap-4 pb-4 border-b border-slate-800">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                <selectedIndustryData.icon className="w-7 h-7" />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                  {selectedIndustryData.name}
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                  {selectedIndustryData.roles.length} job roles · Select a role to explore
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {selectedIndustryData.roles.map((role) => (
+                <div
+                  key={role}
+                  className="bg-slate-900/60 border border-slate-800 hover:border-indigo-500/50 rounded-2xl p-5 text-sm font-semibold text-white transition"
+                >
+                  {role}
+                </div>
+              ))}
+            </div>
+
+            <p className="text-[11px] text-slate-500">
+              Prototype: role discovery demo. Real vacancies can be integrated later through authorized APIs and feeds.
+            </p>
+          </div>
+        )}
+
         {/* VIEW B: EXPLORE JOBS (SEARCH & DISCOVERY) */}
-        {currentTab === 'explore' && (
+        {currentTab === 'explore' && !selectedIndustryData && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
             {/* Header / Search Summary */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
