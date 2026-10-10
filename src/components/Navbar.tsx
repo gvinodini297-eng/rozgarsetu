@@ -9,17 +9,37 @@ import {
   LogIn,
   Menu,
   X,
-  Sparkles,
   Layers,
   MapPin,
+  ClipboardList,
+  CheckCircle2,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useJobs } from '../context/JobContext';
 
+type Tab =
+  | 'home'
+  | 'explore'
+  | 'categories'
+  | 'saved'
+  | 'dashboard'
+  | 'admin'
+  | 'applied'
+  | 'accepted'
+  | 'reviewed';
+
 interface NavbarProps {
-  currentTab: 'home' | 'explore' | 'categories' | 'saved' | 'dashboard' | 'admin';
-  setCurrentTab: (tab: 'home' | 'explore' | 'categories' | 'saved' | 'dashboard' | 'admin') => void;
+  currentTab: Tab;
+  setCurrentTab: (tab: Tab) => void;
   onOpenAuth: (initialTab?: 'signin' | 'signup') => void;
+}
+
+interface NavItem {
+  tab: Tab;
+  label: string;
+  icon?: React.ElementType;
+  badge?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpenAuth }) => {
@@ -27,11 +47,29 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
   const { savedJobIds } = useJobs();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleNav = (tab: 'home' | 'explore' | 'categories' | 'saved' | 'dashboard' | 'admin') => {
+  const handleNav = (tab: Tab) => {
     setCurrentTab(tab);
     setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const navItems: NavItem[] = [
+    { tab: 'home', label: 'Home' },
+    { tab: 'explore', label: 'Explore Jobs', icon: Search },
+    { tab: 'categories', label: 'Categories', icon: Layers },
+    { tab: 'saved', label: 'Saved Jobs', icon: Bookmark, badge: savedJobIds.length },
+  ];
+
+  if (profile && !isAdmin) {
+    navItems.push({ tab: 'applied', label: 'Applied Jobs', icon: ClipboardList });
+    navItems.push({ tab: 'accepted', label: 'Accepted Jobs', icon: CheckCircle2 });
+  }
+  if (profile && isAdmin) {
+    navItems.push({ tab: 'reviewed', label: 'Reviewed Jobs', icon: ClipboardCheck });
+  }
+  if (profile) {
+    navItems.push({ tab: 'dashboard', label: 'My Profile', icon: User });
+  }
 
   return (
     <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 transition-all">
@@ -54,90 +92,51 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                   Local
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">Multi-Industry Job Aggregator</p>
+              <p className="text-[11px] text-slate-400 hidden sm:block">Multi-Industry Job Discovery</p>
             </div>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
-            <button
-              onClick={() => handleNav('home')}
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition ${
-                currentTab === 'home'
-                  ? 'bg-slate-800 text-white'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-850'
-              }`}
-            >
-              Home
-            </button>
-            <button
-              onClick={() => handleNav('explore')}
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
-                currentTab === 'explore'
-                  ? 'bg-slate-800 text-white'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-850'
-              }`}
-            >
-              <Search className="w-4 h-4 text-slate-400" />
-              Explore Jobs
-            </button>
-            <button
-              onClick={() => handleNav('categories')}
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
-                currentTab === 'categories'
-                  ? 'bg-slate-800 text-white'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-850'
-              }`}
-            >
-              <Layers className="w-4 h-4 text-slate-400" />
-              Categories
-            </button>
-            <button
-              onClick={() => handleNav('saved')}
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
-                currentTab === 'saved'
-                  ? 'bg-slate-800 text-white'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-850'
-              }`}
-            >
-              <Bookmark className="w-4 h-4 text-slate-400" />
-              Saved Jobs
-              {savedJobIds.length > 0 && (
-                <span className="ml-1 text-xs px-1.5 py-0.2 rounded-full bg-indigo-500 text-white font-semibold">
-                  {savedJobIds.length}
-                </span>
-              )}
-            </button>
-            {profile && (
-              <button
-                onClick={() => handleNav('dashboard')}
-                className={`px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
-                  currentTab === 'dashboard'
-                    ? 'bg-slate-800 text-white'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-850'
-                }`}
-              >
-                <User className="w-4 h-4 text-slate-400" />
-                My Profile
-              </button>
-            )}
+          <nav className="hidden lg:flex items-center gap-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.tab}
+                  onClick={() => handleNav(item.tab)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5 whitespace-nowrap ${
+                    currentTab === item.tab
+                      ? 'bg-slate-800 text-white'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  {Icon && <Icon className="w-4 h-4 text-slate-400" />}
+                  {item.label}
+                  {item.badge ? (
+                    <span className="ml-1 text-xs px-1.5 rounded-full bg-indigo-500 text-white font-semibold">
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
             {isAdmin && (
               <button
                 onClick={() => handleNav('admin')}
-                className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 ${
+                className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 whitespace-nowrap ${
                   currentTab === 'admin'
                     ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
                     : 'text-amber-400 hover:bg-amber-500/10 border border-transparent'
                 }`}
               >
                 <Shield className="w-4 h-4 text-amber-400" />
-                Admin Panel
+                Employer Panel
               </button>
             )}
           </nav>
 
           {/* User Auth Actions */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             {profile ? (
               <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg p-1.5 pr-2.5">
                 <div className="w-8 h-8 rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-xs">
@@ -149,7 +148,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                   </p>
                   <p className="text-[10px] text-slate-400 flex items-center gap-1">
                     <MapPin className="w-2.5 h-2.5" />
-                    {profile.preferredLocation || 'Local'}
+                    {isAdmin ? 'Employer' : 'Job Seeker'}
                   </p>
                 </div>
                 <button
@@ -180,7 +179,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex md:hidden items-center gap-2">
+          <div className="flex lg:hidden items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
@@ -194,64 +193,35 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
 
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-800 bg-slate-950 px-4 pt-3 pb-6 space-y-2">
-          <button
-            onClick={() => handleNav('home')}
-            className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium ${
-              currentTab === 'home' ? 'bg-slate-800 text-white' : 'text-slate-300'
-            }`}
-          >
-            Home
-          </button>
-          <button
-            onClick={() => handleNav('explore')}
-            className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium flex items-center justify-between ${
-              currentTab === 'explore' ? 'bg-slate-800 text-white' : 'text-slate-300'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <Search className="w-4 h-4" /> Explore Jobs
-            </span>
-          </button>
-          <button
-            onClick={() => handleNav('categories')}
-            className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 ${
-              currentTab === 'categories' ? 'bg-slate-800 text-white' : 'text-slate-300'
-            }`}
-          >
-            <Layers className="w-4 h-4" /> Categories
-          </button>
-          <button
-            onClick={() => handleNav('saved')}
-            className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium flex items-center justify-between ${
-              currentTab === 'saved' ? 'bg-slate-800 text-white' : 'text-slate-300'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <Bookmark className="w-4 h-4" /> Saved Jobs
-            </span>
-            {savedJobIds.length > 0 && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500 text-white font-semibold">
-                {savedJobIds.length}
-              </span>
-            )}
-          </button>
-          {profile && (
-            <button
-              onClick={() => handleNav('dashboard')}
-              className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 ${
-                currentTab === 'dashboard' ? 'bg-slate-800 text-white' : 'text-slate-300'
-              }`}
-            >
-              <User className="w-4 h-4" /> My Profile & Preferences
-            </button>
-          )}
+        <div className="lg:hidden border-t border-slate-800 bg-slate-950 px-4 pt-3 pb-6 space-y-2">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.tab}
+                onClick={() => handleNav(item.tab)}
+                className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium flex items-center justify-between ${
+                  currentTab === item.tab ? 'bg-slate-800 text-white' : 'text-slate-300'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  {Icon && <Icon className="w-4 h-4" />}
+                  {item.label}
+                </span>
+                {item.badge ? (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500 text-white font-semibold">
+                    {item.badge}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
           {isAdmin && (
             <button
               onClick={() => handleNav('admin')}
-              className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 text-amber-400 bg-amber-500/10 border border-amber-500/30`}
+              className="w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 text-amber-400 bg-amber-500/10 border border-amber-500/30"
             >
-              <Shield className="w-4 h-4" /> Admin Dashboard
+              <Shield className="w-4 h-4" /> Employer Panel
             </button>
           )}
 
@@ -260,7 +230,9 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
               <div className="flex items-center justify-between bg-slate-900 p-3 rounded-lg">
                 <div>
                   <p className="text-sm font-bold text-white">{profile.fullName}</p>
-                  <p className="text-xs text-slate-400">{profile.email}</p>
+                  <p className="text-xs text-slate-400">
+                    {isAdmin ? 'Employer' : 'Job Seeker'} · {profile.email}
+                  </p>
                 </div>
                 <button
                   onClick={signOut}
