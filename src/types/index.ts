@@ -1,6 +1,6 @@
 // WorkConnect Type Definitions
 
-export type Role = 'job_seeker' | 'admin';
+export type Role = 'job_seeker' | 'employer' | 'admin';
 
 export type JobType = 'Full-time' | 'Part-time' | 'Temporary' | 'Internship' | 'Contract';
 
