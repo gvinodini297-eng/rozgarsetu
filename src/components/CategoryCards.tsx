@@ -1,67 +1,252 @@
 import React from 'react';
-import { Category } from '../types';
-import { CategoryIcon } from './CategoryIcon';
-import { ArrowUpRight, Sparkles } from 'lucide-react';
+import {
+  ArrowUpRight,
+  BriefcaseBusiness,
+  Building2,
+  GraduationCap,
+  HeartPulse,
+  Hotel,
+  Landmark,
+  ShoppingBag,
+  Truck,
+  Utensils,
+  ShieldCheck,
+  Sparkles,
+  Wrench,
+} from 'lucide-react';
 
 interface CategoryCardsProps {
-  categories: Category[];
+  categories?: unknown[];
   onSelectCategory: (categoryId: string) => void;
 }
 
-export const CategoryCards: React.FC<CategoryCardsProps> = ({ categories, onSelectCategory }) => {
-  const activeCategories = categories.filter((c) => c.isActive);
+const industries = [
+  {
+    id: 'software',
+    name: 'Software & IT',
+    description: 'Explore technology and software career roles.',
+    icon: BriefcaseBusiness,
+    roles: [
+      'AI Engineer',
+      'Prompt Engineer',
+      'Java Developer',
+      'Python Developer',
+      'Frontend Developer',
+      'Backend Developer',
+      'Data Analyst',
+      'Cybersecurity Engineer',
+      'Cloud Engineer',
+      'UI/UX Designer',
+    ],
+  },
+  {
+    id: 'restaurant',
+    name: 'Restaurants & Cafes',
+    description: 'Discover roles across restaurants and food services.',
+    icon: Utensils,
+    roles: [
+      'Chef',
+      'Sous Chef',
+      'Waiter',
+      'Receptionist',
+      'Cashier',
+      'Kitchen Helper',
+      'Barista',
+      'Restaurant Manager',
+    ],
+  },
+  {
+    id: 'hospitality',
+    name: 'Hotels & Hospitality',
+    description: 'Explore hotel, guest service and hospitality roles.',
+    icon: Hotel,
+    roles: [
+      'Front Office Executive',
+      'Receptionist',
+      'Housekeeping Staff',
+      'Hotel Manager',
+      'Guest Relations Executive',
+      'Chef',
+      'Event Coordinator',
+    ],
+  },
+  {
+    id: 'healthcare',
+    name: 'Healthcare',
+    description: 'Explore careers in hospitals, clinics and healthcare.',
+    icon: HeartPulse,
+    roles: [
+      'Nurse',
+      'Pharmacist',
+      'Lab Technician',
+      'Receptionist',
+      'Medical Assistant',
+      'Caregiver',
+      'Hospital Administrator',
+    ],
+  },
+  {
+    id: 'education',
+    name: 'Education',
+    description: 'Teaching, tutoring and academic support roles.',
+    icon: GraduationCap,
+    roles: [
+      'School Teacher',
+      'Maths Teacher',
+      'Science Teacher',
+      'English Teacher',
+      'Tutor',
+      'Academic Counselor',
+      'Lab Assistant',
+    ],
+  },
+  {
+    id: 'finance',
+    name: 'Banking & Finance',
+    description: 'Explore banking, accounting and financial roles.',
+    icon: Landmark,
+    roles: [
+      'Accountant',
+      'Banking Associate',
+      'Financial Analyst',
+      'Loan Officer',
+      'Cashier',
+      'Relationship Manager',
+      'Insurance Advisor',
+    ],
+  },
+  {
+    id: 'retail',
+    name: 'Retail & Shopping',
+    description: 'Explore jobs in stores, sales and customer service.',
+    icon: ShoppingBag,
+    roles: [
+      'Sales Executive',
+      'Store Manager',
+      'Cashier',
+      'Customer Support Executive',
+      'Inventory Assistant',
+      'Retail Associate',
+      'Store Supervisor',
+    ],
+  },
+  {
+    id: 'logistics',
+    name: 'Logistics & Delivery',
+    description: 'Find opportunities in transport and delivery services.',
+    icon: Truck,
+    roles: [
+      'Delivery Executive',
+      'Warehouse Assistant',
+      'Logistics Coordinator',
+      'Driver',
+      'Inventory Executive',
+      'Fleet Supervisor',
+    ],
+  },
+  {
+    id: 'security',
+    name: 'Security Services',
+    description: 'Security and safety-related career opportunities.',
+    icon: ShieldCheck,
+    roles: [
+      'Security Guard',
+      'Security Supervisor',
+      'CCTV Operator',
+      'Security Officer',
+      'Event Security Staff',
+    ],
+  },
+  {
+    id: 'construction',
+    name: 'Construction & Skilled Trades',
+    description: 'Explore construction and technical trade roles.',
+    icon: Wrench,
+    roles: [
+      'Electrician',
+      'Plumber',
+      'Site Supervisor',
+      'Civil Engineer',
+      'Welder',
+      'Carpenter',
+      'Construction Helper',
+    ],
+  },
+  {
+    id: 'office',
+    name: 'Office & Administration',
+    description: 'Administrative and office support opportunities.',
+    icon: Building2,
+    roles: [
+      'Office Assistant',
+      'Receptionist',
+      'Data Entry Operator',
+      'HR Executive',
+      'Administrative Assistant',
+      'Customer Support Executive',
+    ],
+  },
+];
 
+export const CategoryCards: React.FC<CategoryCardsProps> = ({
+  onSelectCategory,
+}) => {
   return (
     <section className="py-16 bg-slate-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-indigo-400 mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Explore by Industry</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              Popular Local Categories
-            </h2>
-            <p className="text-sm text-slate-400 mt-1 max-w-xl">
-              Discover opportunities across frontline, hospitality, retail, office, and technical trades.
-            </p>
+
+        <div className="mb-10">
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-indigo-400 mb-2">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Explore by Industry</span>
           </div>
+
+          <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            Find Jobs by Industry
+          </h2>
+
+          <p className="text-sm text-slate-400 mt-2 max-w-2xl">
+            Choose an industry to explore different job roles and career
+            opportunities.
+          </p>
         </div>
 
-        {/* Dynamic Category Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {activeCategories.map((category) => (
-            <div
-              key={category.id}
-              onClick={() => onSelectCategory(category.id)}
-              className="group relative bg-slate-900/60 hover:bg-slate-850/80 border border-slate-800 hover:border-indigo-500/50 rounded-2xl p-5 cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-950/20 flex flex-col justify-between"
-            >
-              <div>
+          {industries.map((industry) => {
+            const Icon = industry.icon;
+
+            return (
+              <div
+                key={industry.id}
+                onClick={() => onSelectCategory(industry.id)}
+                className="group relative bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-indigo-500/50 rounded-2xl p-5 cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-950/20"
+              >
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                    <CategoryIcon name={category.icon} className="w-6 h-6" />
+                  <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                    <Icon className="w-6 h-6" />
                   </div>
-                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60 group-hover:border-indigo-500/30">
-                    {category.jobCount ?? 0} {category.jobCount === 1 ? 'opening' : 'openings'}
-                  </span>
+
+                  <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-indigo-400 transition" />
                 </div>
 
-                <h3 className="text-base font-bold text-white group-hover:text-indigo-300 transition mb-1.5 flex items-center justify-between">
-                  <span>{category.name}</span>
-                  <ArrowUpRight className="w-4 h-4 opacity-0 -translate-x-1 translate-y-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 text-indigo-400 transition" />
+                <h3 className="text-base font-bold text-white group-hover:text-indigo-300 transition">
+                  {industry.name}
                 </h3>
-                <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                  {category.description}
-                </p>
-              </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center text-[11px] font-semibold text-indigo-400 group-hover:text-indigo-300">
-                <span>View listings in {category.name}</span>
+                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                  {industry.description}
+                </p>
+
+                <div className="mt-4 pt-3 border-t border-slate-800">
+                  <p className="text-[11px] text-indigo-400 font-semibold">
+                    {industry.roles.length} job roles
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+
       </div>
     </section>
   );
