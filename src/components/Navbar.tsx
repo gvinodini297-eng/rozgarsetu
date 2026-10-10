@@ -11,9 +11,11 @@ import {
   X,
   Layers,
   MapPin,
-  ClipboardList,
+  Send,
   CheckCircle2,
   ClipboardCheck,
+  Building2,
+  Home,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useJobs } from '../context/JobContext';
@@ -32,20 +34,18 @@ type Tab =
 interface NavbarProps {
   currentTab: Tab;
   setCurrentTab: (tab: Tab) => void;
-  onOpenAuth: (initialTab?: 'signin' | 'signup') => void;
-}
-
-interface NavItem {
-  tab: Tab;
-  label: string;
-  icon?: React.ElementType;
-  badge?: number;
+  onOpenAuth: (initialTab?: 'signin' | 'signup', role?: 'job_seeker' | 'employer') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpenAuth }) => {
-  const { profile, isAdmin, signOut } = useAuth();
+  const { profile, signOut } = useAuth();
   const { savedJobIds } = useJobs();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const role = profile?.role ?? null;
+  const isEmployer = role === 'employer';
+  const isSeeker = role === 'job_seeker';
+  const isAdminUser = role === 'admin';
 
   const handleNav = (tab: Tab) => {
     setCurrentTab(tab);
@@ -53,90 +53,77 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const navItems: NavItem[] = [
-    { tab: 'home', label: 'Home' },
-    { tab: 'explore', label: 'Explore Jobs', icon: Search },
-    { tab: 'categories', label: 'Categories', icon: Layers },
-    { tab: 'saved', label: 'Saved Jobs', icon: Bookmark, badge: savedJobIds.length },
-  ];
+  const roleLabel = isEmployer ? 'Employer' : isAdminUser ? 'Admin' : 'Job Seeker';
+  const roleChipCls = isEmployer
+    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+    : isAdminUser
+    ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+    : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30';
 
-  if (profile && !isAdmin) {
-    navItems.push({ tab: 'applied', label: 'Applied Jobs', icon: ClipboardList });
-    navItems.push({ tab: 'accepted', label: 'Accepted Jobs', icon: CheckCircle2 });
+  type Item = { tab: Tab; label: string; icon: React.ElementType; badge?: number };
+
+  const items: Item[] = [{ tab: 'home', label: isEmployer ? 'Dashboard' : 'Home', icon: Home }];
+  if (!isEmployer) {
+    items.push({ tab: 'explore', label: 'Explore Jobs', icon: Search });
+    items.push({ tab: 'categories', label: 'Categories', icon: Layers });
+    items.push({ tab: 'saved', label: 'Saved Jobs', icon: Bookmark, badge: savedJobIds.length });
   }
-  if (profile && isAdmin) {
-    navItems.push({ tab: 'reviewed', label: 'Reviewed Jobs', icon: ClipboardCheck });
+  if (isSeeker) {
+    items.push({ tab: 'applied', label: 'Applied Jobs', icon: Send });
+    items.push({ tab: 'accepted', label: 'Accepted Jobs', icon: CheckCircle2 });
+    items.push({ tab: 'dashboard', label: 'My Profile', icon: User });
   }
-  if (profile) {
-    navItems.push({ tab: 'dashboard', label: 'My Profile', icon: User });
+  if (isEmployer) {
+    items.push({ tab: 'reviewed', label: 'Reviewed Jobs', icon: ClipboardCheck });
+  }
+  if (isAdminUser) {
+    items.push({ tab: 'admin', label: 'Admin Panel', icon: Shield });
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 transition-all">
+    <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div
-            onClick={() => handleNav('home')}
-            className="flex items-center gap-3 cursor-pointer group"
-          >
+          <div onClick={() => handleNav('home')} className="flex items-center gap-3 cursor-pointer group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition-transform">
               <Briefcase className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-bold tracking-tight text-white group-hover:text-indigo-400 transition">
-                  Work<span className="text-indigo-500">Connect</span>
-                </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  Local
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">Multi-Industry Job Discovery</p>
+              <span className="text-xl font-bold tracking-tight text-white group-hover:text-indigo-400 transition">
+                Work<span className="text-indigo-500">Connect</span>
+              </span>
+              <p className="text-[11px] text-slate-400 hidden sm:block">Local jobs, simply connected</p>
             </div>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-1">
+            {items.map((it) => {
+              const Icon = it.icon;
+              const active = currentTab === it.tab;
               return (
                 <button
-                  key={item.tab}
-                  onClick={() => handleNav(item.tab)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5 whitespace-nowrap ${
-                    currentTab === item.tab
-                      ? 'bg-slate-800 text-white'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  key={it.tab}
+                  onClick={() => handleNav(it.tab)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
+                    active ? 'bg-slate-800 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-900'
                   }`}
                 >
-                  {Icon && <Icon className="w-4 h-4 text-slate-400" />}
-                  {item.label}
-                  {item.badge ? (
+                  <Icon className="w-4 h-4 text-slate-400" />
+                  {it.label}
+                  {it.badge ? (
                     <span className="ml-1 text-xs px-1.5 rounded-full bg-indigo-500 text-white font-semibold">
-                      {item.badge}
+                      {it.badge}
                     </span>
                   ) : null}
                 </button>
               );
             })}
-            {isAdmin && (
-              <button
-                onClick={() => handleNav('admin')}
-                className={`px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 whitespace-nowrap ${
-                  currentTab === 'admin'
-                    ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
-                    : 'text-amber-400 hover:bg-amber-500/10 border border-transparent'
-                }`}
-              >
-                <Shield className="w-4 h-4 text-amber-400" />
-                Employer Panel
-              </button>
-            )}
           </nav>
 
-          {/* User Auth Actions */}
-          <div className="hidden lg:flex items-center gap-3">
+          {/* Desktop auth */}
+          <div className="hidden md:flex items-center gap-3">
             {profile ? (
               <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg p-1.5 pr-2.5">
                 <div className="w-8 h-8 rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-xs">
@@ -146,10 +133,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
                   <p className="font-semibold text-slate-200 leading-tight truncate max-w-[120px]">
                     {profile.fullName}
                   </p>
-                  <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <MapPin className="w-2.5 h-2.5" />
-                    {isAdmin ? 'Employer' : 'Job Seeker'}
-                  </p>
+                  <span className={`text-[10px] px-1.5 rounded border ${roleChipCls}`}>{roleLabel}</span>
                 </div>
                 <button
                   onClick={signOut}
@@ -162,13 +146,20 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
             ) : (
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => onOpenAuth('signin')}
+                  onClick={() => onOpenAuth('signin', 'employer')}
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/10 transition flex items-center gap-1.5"
+                >
+                  <Building2 className="w-4 h-4" />
+                  For Employers
+                </button>
+                <button
+                  onClick={() => onOpenAuth('signin', 'job_seeker')}
                   className="px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white transition"
                 >
                   Sign In
                 </button>
                 <button
-                  onClick={() => onOpenAuth('signup')}
+                  onClick={() => onOpenAuth('signup', 'job_seeker')}
                   className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/20 transition flex items-center gap-1.5"
                 >
                   <LogIn className="w-4 h-4" />
@@ -179,7 +170,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex lg:hidden items-center gap-2">
+          <div className="flex md:hidden items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
@@ -191,76 +182,80 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, onOpe
         </div>
       </div>
 
-      {/* Mobile Menu Drawer */}
+      {/* Mobile drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-800 bg-slate-950 px-4 pt-3 pb-6 space-y-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
+        <div className="md:hidden border-t border-slate-800 bg-slate-950 px-4 pt-3 pb-6 space-y-2">
+          {items.map((it) => {
+            const Icon = it.icon;
+            const active = currentTab === it.tab;
             return (
               <button
-                key={item.tab}
-                onClick={() => handleNav(item.tab)}
+                key={it.tab}
+                onClick={() => handleNav(it.tab)}
                 className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium flex items-center justify-between ${
-                  currentTab === item.tab ? 'bg-slate-800 text-white' : 'text-slate-300'
+                  active ? 'bg-slate-800 text-white' : 'text-slate-300'
                 }`}
               >
                 <span className="flex items-center gap-2">
-                  {Icon && <Icon className="w-4 h-4" />}
-                  {item.label}
+                  <Icon className="w-4 h-4" /> {it.label}
                 </span>
-                {item.badge ? (
+                {it.badge ? (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500 text-white font-semibold">
-                    {item.badge}
+                    {it.badge}
                   </span>
                 ) : null}
               </button>
             );
           })}
-          {isAdmin && (
-            <button
-              onClick={() => handleNav('admin')}
-              className="w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 text-amber-400 bg-amber-500/10 border border-amber-500/30"
-            >
-              <Shield className="w-4 h-4" /> Employer Panel
-            </button>
-          )}
 
           <div className="pt-3 border-t border-slate-800/80">
             {profile ? (
               <div className="flex items-center justify-between bg-slate-900 p-3 rounded-lg">
                 <div>
                   <p className="text-sm font-bold text-white">{profile.fullName}</p>
-                  <p className="text-xs text-slate-400">
-                    {isAdmin ? 'Employer' : 'Job Seeker'} · {profile.email}
-                  </p>
+                  <span className={`text-[10px] px-1.5 rounded border ${roleChipCls}`}>{roleLabel}</span>
                 </div>
                 <button
-                  onClick={signOut}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    signOut();
+                  }}
                   className="px-3 py-1.5 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-md font-medium"
                 >
                   Sign Out
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    onOpenAuth('signin');
+                    onOpenAuth('signin', 'employer');
                   }}
-                  className="w-full py-2.5 text-center text-sm font-medium bg-slate-800 text-slate-200 rounded-lg"
+                  className="w-full py-2.5 text-center text-sm font-semibold text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 rounded-lg flex items-center justify-center gap-2"
                 >
-                  Sign In
+                  <Building2 className="w-4 h-4" /> For Employers (Post a Job)
                 </button>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onOpenAuth('signup');
-                  }}
-                  className="w-full py-2.5 text-center text-sm font-medium bg-indigo-600 text-white rounded-lg"
-                >
-                  Sign Up
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenAuth('signin', 'job_seeker');
+                    }}
+                    className="w-full py-2.5 text-center text-sm font-medium bg-slate-800 text-slate-200 rounded-lg"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenAuth('signup', 'job_seeker');
+                    }}
+                    className="w-full py-2.5 text-center text-sm font-medium bg-indigo-600 text-white rounded-lg"
+                  >
+                    Sign Up
+                  </button>
+                </div>
               </div>
             )}
           </div>
