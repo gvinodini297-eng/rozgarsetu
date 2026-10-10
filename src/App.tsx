@@ -41,6 +41,7 @@ const WorkConnectApp: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<
     'home' | 'explore' | 'categories' | 'saved' | 'dashboard' | 'admin'
   >('home');
+  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
 
   // Modals State
   const [selectedJobForDetail, setSelectedJobForDetail] = useState<Job | null>(null);
@@ -111,13 +112,11 @@ const WorkConnectApp: React.FC = () => {
 
   // Category select trigger -> Transition to explore
   const handleCategorySelect = (categoryId: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      categoryId,
-    }));
-    setCurrentTab('explore');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  setSelectedIndustry(categoryId);
+  setCurrentTab('explore');
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
   // Open Auth Modal helper
   const handleOpenAuth = (initialTab: 'signin' | 'signup' = 'signin') => {
