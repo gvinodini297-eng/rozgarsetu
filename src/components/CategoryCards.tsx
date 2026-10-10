@@ -20,7 +20,7 @@ interface CategoryCardsProps {
   onSelectCategory: (categoryId: string) => void;
 }
 
-export industries = [
+export const industries = [
   {
     id: 'software',
     name: 'Software & IT',
