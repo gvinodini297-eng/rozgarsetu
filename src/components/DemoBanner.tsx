@@ -51,7 +51,7 @@ export const DemoBanner: React.FC<DemoBannerProps> = ({ onOpenSetupGuide }) => {
                 demoRole === 'admin' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'
               }`}
             >
-              Admin
+              Employer
             </button>
           </div>
 
